@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Retrabajos y Calidad</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header id="app-header" style="display: none;">
+    <div class="user-info">
+      <span>Operador: <strong id="lbl-operador">--</strong></span>
+      <span>Estación: <strong id="lbl-estacion">--</strong></span>
+      <span class="badge-session" id="lbl-timer">Inactividad: 60m</span>
+    </div>
+    <div>
+      <button class="btn-header btn-logout" onclick="intentarCerrarSesion()">Salir</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. LOGIN CON ROLES -->
+    <div class="view-panel active" id="view-login">
+      <div class="modal-content" style="max-width: 400px; margin: 0 auto; box-shadow: none; border: 1px solid var(--border);">
+        
+        <div class="login-logo-container">
+          <img src="https://raw.githubusercontent.com/fb-ilm/hdms.github.io/refs/heads/main/src/logo/logohdms.png" alt="Logo de la Empresa" id="img-login-logo">
+        </div>
+
+        <div class="tab-container">
+          <button type="button" class="tab-btn active" id="tab-op" onclick="cambiarModoLogin('OP')">Operador</button>
+          <button type="button" class="tab-btn" id="tab-adm" onclick="cambiarModoLogin('ADM')">Administrador</button>
+        </div>
+
+        <!-- Operador -->
+        <form id="form-login-op">
+          <div class="form-group">
+            <label for="login-emp">Número de empleado:</label>
+            <input type="password" id="login-emp" placeholder="Escanea tu gafete" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="login-est">Estación de trabajo</label>
+            <input type="text" id="login-est" placeholder="Escanea tu estación" required autocomplete="off">
+          </div>
+          <button type="submit" class="btn">Ingresar</button>
+        </form>
+
+        <!-- Admin -->
+        <form id="form-login-adm" style="display: none;">
+          <div class="form-group">
+            <label for="admin-email">Correo electrónico:</label>
+            <input type="email" id="admin-email" placeholder="usuario@empresa.com" required autocomplete="off">
+          </div>
+          
+          <div class="form-group" id="grp-admin-pin">
+            <label for="admin-pin" id="lbl-admin-pin">PIN de acceso:</label>
+            <input type="password" id="admin-pin" maxlength="6" placeholder="******" required autocomplete="off">
+          </div>
+
+          <div class="form-group" id="grp-admin-pin-confirm" style="display: none;">
+            <label for="admin-pin-confirm">Confirmar Nuevo PIN (6 dígitos):</label>
+            <input type="password" id="admin-pin-confirm" maxlength="6" placeholder="******" autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn" id="btn-admin-submit">Ingresar</button>
+          <button type="button" class="btn" id="btn-admin-cancel-create" style="display: none; background: var(--text-muted); margin-top: 6px;" onclick="cancelarCrearPin()">Cancelar</button>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- 2. WORKSPACE OPERADOR -->
+    <div class="view-panel" id="view-workspace">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 1.15rem;">Inspección final | Producción</h2>
+        <div>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Shopfloor ID:</span>
+          <strong id="lbl-shopfloor" style="font-size: 0.9rem; margin-right: 12px;">--</strong>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Modelo:</span>
+          <strong id="lbl-modelo" style="font-size: 0.9rem;">--</strong>
+        </div>
+      </div>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 600 620">
+          <defs>
+            <pattern id="screen-grid" width="6" height="6" patternUnits="userSpaceOnUse">
+              <rect width="6" height="6" fill="#f8fafc" />
+              <path d="M 6 0 L 0 0 0 6" fill="none" stroke="#cbd5e1" stroke-width="0.8"/>
+            </pattern>
+          </defs>
+
+          <g class="comp-zone" data-id-section="1">
+            <rect class="comp-shape" x="80" y="30" width="440" height="50" rx="4" />
+            <text class="comp-text" x="300" y="60" text-anchor="middle">1. CABEZAL</text>
+          </g>
+
+          <g class="comp-zone" data-id-section="2">
+            <rect class="comp-shape" x="110" y="88" width="380" height="28" rx="2" />
+            <text class="comp-text" x="300" y="106" text-anchor="middle"></text>
+          </g>
+
+          <g class="comp-zone" data-id-section="3">
+            <rect class="comp-shape" x="82" y="88" width="24" height="35" rx="2" />
+            <rect class="comp-shape" x="494" y="88" width="24" height="35" rx="2" />
+            <path d="M 500,123 L 500,480 A 6,6 0 0,0 512,480 L 512,123" stroke="#64748b" stroke-width="3" stroke-dasharray="4,4" fill="none"/>
+            <rect class="comp-shape" x="498" y="475" width="16" height="25" rx="3" />
+            <text class="comp-text" x="510" y="75" text-anchor="middle">MECANISMO</text>
+          </g>
+
+          <g class="comp-zone" data-id-section="4">
+            <rect class="fabric-pattern" x="118" y="120" width="364" height="380" />
+            <text class="comp-text" x="300" y="310" text-anchor="middle" font-size="18">TELA (SCREEN)</text>
+          </g>
+
+          <g class="comp-zone" data-id-section="5">
+            <rect class="comp-shape" x="110" y="505" width="380" height="30" rx="3" />
+            <text class="comp-text" x="300" y="525" text-anchor="middle">5. BARRA INFERIOR</text>
+          </g>
+        </svg>
+      </div>
+
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+        Haz clic sobre la sección de la persiana donde detectaste el problema.
+      </div>
+    </div>
+
+    <!-- 3. VISTA ADMINISTRADOR -->
+    <div class="view-panel" id="view-admin">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.2rem;">Panel de Administración y Control</h2>
+        <button class="btn-header btn-logout" onclick="cerrarSesionAdmin()">Cerrar Sesión Admin</button>
+      </div>
+
+      <!-- SECCIÓN A: EXPORTACIÓN CSV -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="font-size: 1rem; margin-bottom: 12px;">Exportar Base de Registros (CSV)</h3>
+        <div class="filter-grid">
+          <div>
+            <label>Desde:</label>
+            <input type="date" id="filtro-desde">
+          </div>
+          <div>
+            <label>Hasta:</label>
+            <input type="date" id="filtro-hasta">
+          </div>
+          <div>
+            <label>Categoría:</label>
+            <select id="filtro-cat">
+              <option value="ALL">Todas</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" onclick="descargarCSV()">Descargar Archivo CSV</button>
+      </div>
+
+      <!-- SECCIÓN B: MANTENIMIENTO INTUITIVO (CRUD) -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1rem;">Configuración de Opciones del Sistema</h3>
+          <button class="btn" style="width: auto; padding: 8px 16px; margin-top: 0; background: var(--success);" onclick="abrirModalNuevaFila()">+ Agregar Opción</button>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="select-crud-table">Selecciona el catálogo a consultar/modificar:</label>
+          <select id="select-crud-table" onchange="renderizarTablaCRUD()">
+            <option value="tbProductos">Modelos de Producción (Productos)</option>
+            <option value="tbCodigos">Códigos de Defectos (Fallas)</option>
+            <option value="tbRetrabajos">Acciones de Reparación (Retrabajos)</option>
+            <option value="tbCategorias">Categorías de Registro</option>
+            <option value="tbSecciones">Componentes de la Persiana (Secciones)</option>
+            <option value="tbUsuarios">Usuarios Administradores</option>
+          </select>
+        </div>
+
+        <div class="crud-table-wrap">
+          <table class="crud-table" id="tabla-crud-render"></table>
+        </div>
+      </div>
+
+      <!-- SECCIÓN C: RECARGA DE CACHÉ -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+        <h3 style="font-size: 1rem; margin-bottom: 8px;">Sincronización de Datos</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Si realizaste cambios directos en la base de datos, fuerza la actualización inmediata aquí:
+        </p>
+        <button class="btn" style="background: #475569;" onclick="cargarCatalogos(true)">Forzar Recarga de Catálogos</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: AGREGAR REGISTRO CRUD (INTUITIVO) -->
+  <div class="modal-overlay" id="modal-crud-add">
+    <div class="modal-content">
+      <div class="modal-title" id="lbl-crud-modal-title">Agregar Opción</div>
+      <form id="form-crud-add">
+        <div id="container-crud-inputs"></div>
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <button type="button" class="btn" style="background: var(--text-muted); margin-top: 6px;" onclick="cerrarModalNuevaFila()">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ESCANEO DE PIEZA -->
+  <div class="modal-overlay" id="modal-pieza">
+    <div class="modal-content">
+      <div class="modal-title">Escanear pieza</div>
+      <form id="form-pieza">
+        <div class="form-group">
+          <label for="input-shopfloor">Código de la estación:</label>
+          <input type="text" id="input-shopfloor" required minlength="20" placeholder="Escanea código de barras..." autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="select-modelo">Modelo:</label>
+          <select id="select-modelo" required>
+            <option value="">Cargando modelos...</option>
+          </select>
+        </div>
+        <button type="submit" class="btn">Continuar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMACIÓN DE RETRABAJO PREVIO -->
+  <div class="modal-overlay" id="modal-retrabajo-previo">
+    <div class="modal-content" style="text-align: center;">
+      <div class="modal-title" style="color: var(--primary);">Pieza previamente rechazada</div>
+      <p style="font-size: 0.95rem; margin-bottom: 16px;">
+        Esta pieza tiene un registro previo como <strong>RETRABAJO</strong>.<br>
+        ¿Se corrigió y arregló el defecto?
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <button type="button" class="btn btn-success" onclick="abrirModalSolucionRetrabajo()">Arreglado</button>
+        <button type="button" class="btn btn-danger" onclick="confirmarNuevoDefecto()">No arreglado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SOLUCIÓN DE RETRABAJO -->
+  <div class="modal-overlay" id="modal-solucion-retrabajo">
+    <div class="modal-content">
+      <div class="modal-title">Detalle de la reparación aplicada</div>
+      <form id="form-solucion-retrabajo">
+        <div class="form-group">
+          <label for="select-accion-retrabajo">Acción de reparación:</label>
+          <select id="select-accion-retrabajo" required>
+            <option value="">-- Selecciona Acción --</option>
+          </select>
+        </div>
+        
+        <div class="form-group" id="grp-dinamico-retrabajo" style="display: none;">
+          <label id="lbl-dinamico-retrabajo">Dato adicional:</label>
+          <div id="container-input-retrabajo"></div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Guardar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CATEGORÍAS -->
+  <div class="modal-overlay" id="modal-categorias">
+    <div class="modal-content">
+      <div class="modal-title">Tipo de registro</div>
+      <form id="form-categorias">
+        <div class="checkbox-group" id="list-categorias"></div>
+        <button type="submit" class="btn">Siguiente</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PROBLEMA Y DEFECTO (RETRABAJO) -->
+  <div class="modal-overlay" id="modal-problema">
+    <div class="modal-content">
+      <div class="modal-title">Detalle del defecto</div>
+      <form id="form-problema">
+        <div class="form-group">
+          <label for="select-problema">Tipo de problema:</label>
+          <select id="select-problema" required>
+            <option value="">-- Selecciona --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="select-codigo">Defecto:</label>
+          <select id="select-codigo" required disabled>
+            <option value="">-- Selecciona primero el tipo --</option>
+          </select>
+        </div>
+        <div class="form-group" id="group-otro-defecto" style="display: none;">
+          <label for="input-otro-defecto">Especifica el defecto (Otros):</label>
+          <input type="text" id="input-otro-defecto" placeholder="Describe la falla...">
+        </div>
+        <button type="submit" class="btn">Continuar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PREGUNTAS CONTENCIONES -->
+  <div class="modal-overlay" id="modal-preguntas">
+    <div class="modal-content">
+      <div class="modal-title" id="lbl-contencion-title">Validación de contención</div>
+      <div class="visual-aid-box" id="box-visual-aid" style="display: none;">
+        <img id="img-visual-reference" src="" alt="Referencia visual">
+      </div>
+      <form id="form-preguntas">
+        <div id="container-preguntas-dinamicas"></div>
+        <button type="submit" class="btn" id="btn-finalizar-registro">Confirmar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CARGANDO -->
+  <div class="modal-overlay" id="modal-loading" style="z-index: 1100;">
+    <div class="modal-content" style="max-width: 320px; text-align: center;">
+      <div class="spinner"></div>
+      <div style="font-weight: 700; color: var(--text);">Procesando...</div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Por favor, espera un momento.</div>
+    </div>
+  </div>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>
