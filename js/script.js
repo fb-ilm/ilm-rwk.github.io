@@ -777,7 +777,7 @@ document.getElementById("form-crud-add").addEventListener("submit", async (e) =>
     ).json();
 
     if (res.success) {
-      alert("✓ Guardado correctamente.");
+      // alert("✓ Guardado correctamente.");
       cerrarModalNuevaFila();
       e.target.reset();
       listaOpcionesRetrabajoTemporal = [];
