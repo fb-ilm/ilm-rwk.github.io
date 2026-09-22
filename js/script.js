@@ -192,7 +192,6 @@ document.getElementById("form-login-op").addEventListener("submit", (e) => {
   const empInput = document.getElementById("login-emp").value.trim();
   const estInput = document.getElementById("login-est").value.trim();
 
-  // Validación Empleado: Inicia en 0, termina en A/a, 7 caracteres
   const empRegex = /^0[a-zA-Z0-9]{5}[aA]$/;
   if (!empRegex.test(empInput)) {
     alert("Número de empleado inválido.\n\nRequisitos:\n• Debes escanear tu gafete (7 caracteres, inicia con 0 y termina con A).");
@@ -200,7 +199,6 @@ document.getElementById("form-login-op").addEventListener("submit", (e) => {
     return;
   }
 
-  // Validación Estación: 2 guiones bajos separando bloques (ej. WOD_FIN_01, ROL_FIN_01)
   const estUpper = estInput.toUpperCase();
   const countGuiones = (estInput.match(/_/g) || []).length;
   const estRegex = /^[A-Z0-9]+_[A-Z0-9]+_[A-Z0-9]+$/;
@@ -777,7 +775,7 @@ document.getElementById("form-crud-add").addEventListener("submit", async (e) =>
     ).json();
 
     if (res.success) {
-      // alert("✓ Guardado correctamente.");
+      alert("✓ Guardado correctamente.");
       cerrarModalNuevaFila();
       e.target.reset();
       listaOpcionesRetrabajoTemporal = [];
@@ -820,7 +818,7 @@ async function eliminarFilaCRUD(sheetName, idValue) {
 
 /**
  * =========================================================================
- * NUEVO FLUJO OPERATIVO UX
+ * FLUJO OPERATIVO UX ACTUALIZADO
  * =========================================================================
  */
 
@@ -842,7 +840,6 @@ document.getElementById("form-pieza").addEventListener("submit", (e) => {
   currentPiece.shopfloor_id = shopfloor;
   currentPiece.id_model = model;
 
-  // PASO 6: Si existe registro previo en rechazo, desplegar pop-up
   const pendientes = JSON.parse(localStorage.getItem(CACHE_KEY_RETRABAJOS) || "{}");
   if (pendientes[shopfloor]) {
     document.getElementById("modal-pieza").classList.remove("active");
@@ -859,7 +856,7 @@ function confirmarNuevoDefecto() {
 }
 
 /**
- * PASO 2: Selección de Tipos de Registro (Categorías)
+ * PASO 2: Selección de Tipos de Registro con Exclusión Mutua (Cambio 1)
  */
 function avanzarACategorias() {
   document.getElementById("lbl-shopfloor").textContent = currentPiece.shopfloor_id;
@@ -873,21 +870,64 @@ function avanzarACategorias() {
 function abrirModalCategorias() {
   const container = document.getElementById("list-categorias");
   container.innerHTML = "";
+
   (catalogos.categorias || []).forEach((c) => {
+    const isRetrabajo = c.name_category.toString().toUpperCase().includes("RETRABAJO");
     container.innerHTML += `
-        <label class="checkbox-label">
-          <input type="checkbox" name="cat-choice" value="${c.id_category}" data-name="${c.name_category}">
+        <label class="checkbox-label" id="lbl-cat-${c.id_category}">
+          <input type="checkbox" name="cat-choice" value="${c.id_category}" 
+                 data-name="${c.name_category}" 
+                 data-is-retrabajo="${isRetrabajo}">
           ${c.name_category}
         </label>
       `;
   });
+
+  // Listener para aplicar bloqueo mutuo en tiempo real
+  const allChecks = container.querySelectorAll('input[name="cat-choice"]');
+  allChecks.forEach((chk) => {
+    chk.addEventListener("change", (e) => {
+      const isRetrabajoClicked = e.target.getAttribute("data-is-retrabajo") === "true";
+      const checkedBoxes = Array.from(allChecks).filter((c) => c.checked);
+
+      if (checkedBoxes.length === 0) {
+        // Habilitar todos si no hay nada seleccionado
+        allChecks.forEach((c) => {
+          c.disabled = false;
+          c.closest(".checkbox-label").style.opacity = "1";
+        });
+        return;
+      }
+
+      if (isRetrabajoClicked && e.target.checked) {
+        // Se seleccionó Retrabajo -> Deshabilitar y desmarcar todas las contenciones
+        allChecks.forEach((c) => {
+          if (c !== e.target) {
+            c.checked = false;
+            c.disabled = true;
+            c.closest(".checkbox-label").style.opacity = "0.45";
+          }
+        });
+      } else if (!isRetrabajoClicked && e.target.checked) {
+        // Se seleccionó una contención -> Deshabilitar la casilla de Retrabajo
+        allChecks.forEach((c) => {
+          if (c.getAttribute("data-is-retrabajo") === "true") {
+            c.checked = false;
+            c.disabled = true;
+            c.closest(".checkbox-label").style.opacity = "0.45";
+          }
+        });
+      }
+    });
+  });
+
   document.getElementById("modal-categorias").classList.add("active");
 }
 
 document.getElementById("form-categorias").addEventListener("submit", (e) => {
   e.preventDefault();
   const checked = Array.from(document.querySelectorAll('input[name="cat-choice"]:checked'));
-  if (!checked.length) return alert("Selecciona al menos una categoría.");
+  if (!checked.length) return alert("Selecciona al menos una opción.");
 
   selectedCategories = checked.map((el) => ({
     id: el.value,
@@ -895,16 +935,39 @@ document.getElementById("form-categorias").addEventListener("submit", (e) => {
   }));
 
   document.getElementById("modal-categorias").classList.remove("active");
-  // PASO 3: Queda activa la persiana en el workspace para seleccionar la sección afectada
+
+  const esRetrabajo = selectedCategories.some((c) =>
+    c.name.toString().toUpperCase().includes("RETRABAJO")
+  );
+
+  // CAMBIO 2: Si es contención, saltar SVG e ir directo a los formularios
+  if (!esRetrabajo) {
+    currentSectionId = "0"; // No aplica ubicación para contenciones
+    contencionesQueue = [...selectedCategories];
+    contencionesResponses = {};
+    procesarSiguienteContencion();
+  } else {
+    // Si es Retrabajo, se deja la persiana lista para que indique la zona
+    document.querySelectorAll(".comp-zone").forEach((z) => z.classList.remove("activo"));
+  }
 });
 
 /**
- * PASO 3: Selección de Sección en Persiana Técnica SVG
+ * PASO 3: Selección de Sección en Persiana (Exclusivo para RETRABAJO)
  */
 document.querySelectorAll(".comp-zone").forEach((zone) => {
   zone.addEventListener("click", () => {
     if (selectedCategories.length === 0) {
-      alert("Primero debes escanear la pieza y seleccionar las categorías.");
+      alert("Primero debes escanear la pieza y seleccionar la categoría.");
+      return;
+    }
+
+    const esRetrabajo = selectedCategories.some((c) =>
+      c.name.toString().toUpperCase().includes("RETRABAJO")
+    );
+
+    if (!esRetrabajo) {
+      alert("Las contenciones no requieren selección de ubicación.");
       return;
     }
 
@@ -912,30 +975,13 @@ document.querySelectorAll(".comp-zone").forEach((zone) => {
     zone.classList.add("activo");
     currentSectionId = zone.getAttribute("data-id-section");
 
-    // PASO 4: Se abren los cuestionarios / retrabajo según las categorías elegidas
-    iniciarCuestionariosFlujo();
+    iniciarFlujoProblema();
   });
 });
 
 /**
  * PASO 4: Formularios de Retrabajo y Preguntas Dinámicas
  */
-function iniciarCuestionariosFlujo() {
-  const tieneRetrabajo = selectedCategories.some((c) =>
-    c.name.toString().toUpperCase().includes("RECHAZO")
-  );
-  contencionesQueue = selectedCategories.filter(
-    (c) => !c.name.toString().toUpperCase().includes("RECHAZO")
-  );
-  contencionesResponses = {};
-
-  if (tieneRetrabajo) {
-    iniciarFlujoProblema();
-  } else {
-    procesarSiguienteContencion();
-  }
-}
-
 function iniciarFlujoProblema() {
   const sectionObj = (catalogos.secciones || []).find(
     (s) => s.id_section.toString() === currentSectionId.toString()
@@ -944,7 +990,7 @@ function iniciarFlujoProblema() {
 
   if (applyStr.trim() === "0") {
     retrabajoData = { id_problem: "", id_code: "", otro_detalle: "" };
-    return procesarSiguienteContencion();
+    return enviarRegistrosFinales();
   }
 
   const allowedIds = applyStr.split("|").map((s) => s.trim());
@@ -975,7 +1021,6 @@ document.getElementById("select-problema").addEventListener("change", (e) => {
     return (selCod.innerHTML = '<option value="">-- Selecciona primero el tipo --</option>');
   }
 
-  // Filtrado cruzado: id_problem + id_section
   const codigosFiltrados = (catalogos.codigos || []).filter((c) => {
     const matchProblem = c.id_problem && c.id_problem.toString().trim() === probId.toString().trim();
     const matchSection = c.id_section && c.id_section.toString().trim() === currentSectionId.toString().trim();
@@ -1015,7 +1060,7 @@ document.getElementById("form-problema").addEventListener("submit", (e) => {
   retrabajoData.otro_detalle = document.getElementById("input-otro-defecto").value.trim();
 
   document.getElementById("modal-problema").classList.remove("active");
-  procesarSiguienteContencion();
+  enviarRegistrosFinales();
 });
 
 function procesarSiguienteContencion() {
@@ -1147,13 +1192,13 @@ async function enviarRegistrosFinales() {
   let huboRetrabajo = false;
 
   selectedCategories.forEach((cat) => {
-    const isRetrabajo = cat.name.toString().toUpperCase().includes("RECHAZO");
+    const isRetrabajo = cat.name.toString().toUpperCase().includes("RETRABAJO");
     if (isRetrabajo) huboRetrabajo = true;
 
     records.push({
       id_category: cat.id,
       status_record: isRetrabajo ? "RECHAZO" : "ACTIVO",
-      id_section: currentSectionId,
+      id_section: currentSectionId || "0",
       id_problem: isRetrabajo ? retrabajoData.id_problem : "",
       id_code: isRetrabajo ? retrabajoData.id_code : "",
       response_json: isRetrabajo
