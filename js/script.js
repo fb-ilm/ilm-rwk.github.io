@@ -872,7 +872,7 @@ function abrirModalCategorias() {
   container.innerHTML = "";
 
   (catalogos.categorias || []).forEach((c) => {
-    const isRetrabajo = c.name_category.toString().toUpperCase().includes("RETRABAJO");
+    const isRetrabajo = c.name_category.toString().toUpperCase().includes("RECHAZO");
     container.innerHTML += `
         <label class="checkbox-label" id="lbl-cat-${c.id_category}">
           <input type="checkbox" name="cat-choice" value="${c.id_category}" 
@@ -937,7 +937,7 @@ document.getElementById("form-categorias").addEventListener("submit", (e) => {
   document.getElementById("modal-categorias").classList.remove("active");
 
   const esRetrabajo = selectedCategories.some((c) =>
-    c.name.toString().toUpperCase().includes("RETRABAJO")
+    c.name.toString().toUpperCase().includes("RECHAZO")
   );
 
   // CAMBIO 2: Si es contención, saltar SVG e ir directo a los formularios
@@ -963,7 +963,7 @@ document.querySelectorAll(".comp-zone").forEach((zone) => {
     }
 
     const esRetrabajo = selectedCategories.some((c) =>
-      c.name.toString().toUpperCase().includes("RETRABAJO")
+      c.name.toString().toUpperCase().includes("RECHAZO")
     );
 
     if (!esRetrabajo) {
@@ -1192,7 +1192,7 @@ async function enviarRegistrosFinales() {
   let huboRetrabajo = false;
 
   selectedCategories.forEach((cat) => {
-    const isRetrabajo = cat.name.toString().toUpperCase().includes("RETRABAJO");
+    const isRetrabajo = cat.name.toString().toUpperCase().includes("RECHAZO");
     if (isRetrabajo) huboRetrabajo = true;
 
     records.push({
