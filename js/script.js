@@ -922,10 +922,10 @@ document.querySelectorAll(".comp-zone").forEach((zone) => {
  */
 function iniciarCuestionariosFlujo() {
   const tieneRetrabajo = selectedCategories.some((c) =>
-    c.name.toString().toUpperCase().includes("RETRABAJO")
+    c.name.toString().toUpperCase().includes("RECHAZO")
   );
   contencionesQueue = selectedCategories.filter(
-    (c) => !c.name.toString().toUpperCase().includes("RETRABAJO")
+    (c) => !c.name.toString().toUpperCase().includes("RECHAZO")
   );
   contencionesResponses = {};
 
@@ -1147,7 +1147,7 @@ async function enviarRegistrosFinales() {
   let huboRetrabajo = false;
 
   selectedCategories.forEach((cat) => {
-    const isRetrabajo = cat.name.toString().toUpperCase().includes("RETRABAJO");
+    const isRetrabajo = cat.name.toString().toUpperCase().includes("RECHAZO");
     if (isRetrabajo) huboRetrabajo = true;
 
     records.push({
