@@ -1081,7 +1081,7 @@ function procesarSiguienteContencion() {
   const boxVisual = document.getElementById("box-visual-aid");
   const imgVisual = document.getElementById("img-visual-reference");
   boxVisual.style.display = "none";
-  imgVisual.src = "";
+  imgVisual.src = "https://raw.githubusercontent.com/fgbonilla99-oss/fgbonilla99-oss.github.io/refs/heads/main/image9.png";
 
   const linkedIds = preguntas
     .map((q) => (q.linked_question ? q.linked_question.toString().trim() : ""))
