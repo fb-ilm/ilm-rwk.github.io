@@ -1081,7 +1081,7 @@ function procesarSiguienteContencion() {
   const boxVisual = document.getElementById("box-visual-aid");
   const imgVisual = document.getElementById("img-visual-reference");
   boxVisual.style.display = "none";
-  imgVisual.src = "https://raw.githubusercontent.com/fgbonilla99-oss/fgbonilla99-oss.github.io/refs/heads/main/image9.png";
+  imgVisual.src = "";
 
   const linkedIds = preguntas
     .map((q) => (q.linked_question ? q.linked_question.toString().trim() : ""))
@@ -1139,7 +1139,12 @@ function procesarSiguienteContencion() {
           imgVisual.src = MAPA_IMAGENES_CAT3[val];
           boxVisual.style.display = "flex";
         } else {
-          boxVisual.style.display = "none";
+          if (currentCat.name === 'CONT - PIN HOLE') {
+            imgVisual.src = 'https://raw.githubusercontent.com/fgbonilla99-oss/fgbonilla99-oss.github.io/refs/heads/main/image9.png';
+            boxVisual.style.display = "flex";
+          } else {
+            boxVisual.style.display = "none";
+          }
         }
       }
     });
